@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="chat-disabled">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -1360,6 +1360,11 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
 .menu-footer-note>small .latin-font{font-size:11px!important;line-height:1.45!important}
 
   </style>
+  <style>
+    /* Chat availability is intentionally fail-closed until the control endpoint confirms it. */
+    html.chat-disabled #conciergeWidget, html.chat-disabled #chatPanel, html.chat-disabled #chatBackdrop,
+    html.chat-disabled #aiConcierge, html.chat-disabled #openChatTop { display:none !important; }
+  </style>
 </head>
 <body class="is-home">
   <div class="brand-intro" id="brandIntro" aria-hidden="true"><span class="brand-intro-mark"><img src="assets/extay/extay-logo-official.png" alt=""></span></div>
@@ -2640,6 +2645,16 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     initFullTextI18n();initAttributeI18n();applyStaticLanguage(); renderSmartGuide(); initSpecialTypography(); setInterval(renderSmartGuide,60000);
     const guideAnswers={ko:[],en:[]};
     const chatPanel=document.getElementById('chatPanel'), chatBackdrop=document.getElementById('chatBackdrop'), chatLog=document.getElementById('chatLog'), chatInput=document.getElementById('chatInput'), chatForm=document.getElementById('chatForm'), chatAutocomplete=document.getElementById('chatAutocomplete');
+    let chatEnabled=false;
+    function setChatAvailability(enabled){
+      chatEnabled=enabled===true;
+      document.documentElement.classList.toggle('chat-disabled',!chatEnabled);
+      if(!chatEnabled){ closeChat(); if(chatAutocomplete){chatAutocomplete.innerHTML='';chatAutocomplete.style.display='none';} }
+    }
+    async function loadChatAvailability(){
+      setChatAvailability(false);
+      try{const res=await fetch('/api/chat-status',{headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error(`chat status ${res.status}`);const data=await res.json();setChatAvailability(data?.enabled===true)}catch{setChatAvailability(false)}
+    }
     const menuPanel=document.getElementById('menuPanel'), menuBackdropEl=document.getElementById('menuBackdrop');
     const contactModal=document.getElementById('contactModal'), contactBackdrop=document.getElementById('contactBackdrop');
     let chatGreetingTimer=null,chatGreetingStartTimer=null,chatGreetingStarted=false;
@@ -2654,7 +2669,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
       ja:{phone:{title:'電話番号',desc:'必要な時は下の番号をコピーしてご利用ください。',label:'電話',value:'010-000-0000',copy:'番号をコピー',note:''},kakao:{title:'KakaoTalkオープンチャット',desc:'下の一時オープンチャットURLをコピーしてご利用ください。',label:'オープンチャットURL',value:'https://open.kakao.com/o/sExtayTemp',copy:'URLをコピー',note:'KakaoTalkリンクは現在一時リンクです。'}}
     };
     CONTACT_DETAILS['zh-TW']=traditionalize(CONTACT_DETAILS.zh);
-    function openChat(){dismissChatGreeting();chatPanel.classList.add('open');chatBackdrop.classList.add('open');document.getElementById('openChatFab')?.setAttribute('aria-expanded','true');renderChatAutocomplete(chatInput?.value||'');setTimeout(()=>chatInput.focus(),120)}
+    function openChat(){if(!chatEnabled)return;dismissChatGreeting();chatPanel.classList.add('open');chatBackdrop.classList.add('open');document.getElementById('openChatFab')?.setAttribute('aria-expanded','true');renderChatAutocomplete(chatInput?.value||'');setTimeout(()=>chatInput.focus(),120)}
     function closeChat(){chatPanel.classList.remove('open');chatBackdrop.classList.remove('open');document.getElementById('openChatFab')?.setAttribute('aria-expanded','false')}
     function openMenu(){menuPanel?.classList.add('open');menuBackdropEl?.classList.add('open');menuPanel?.setAttribute('aria-hidden','false');document.getElementById('menuTop')?.setAttribute('aria-expanded','true');setTimeout(()=>document.getElementById('closeMenu')?.focus(),80)}
     function closeMenuPanel(){menuPanel?.classList.remove('open');menuBackdropEl?.classList.remove('open');menuPanel?.setAttribute('aria-hidden','true');document.getElementById('menuTop')?.setAttribute('aria-expanded','false')}
@@ -2676,6 +2691,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     contactBackdrop?.addEventListener('click',closeContactModal);
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenuPanel();closeContactModal();closeLanguageMenu()}});
     initChatGreeting();
+    loadChatAvailability();
     document.addEventListener('click',e=>{if(e.target.closest('.menu-link'))closeMenuPanel();if(!e.target.closest('#homeLanguage'))closeLanguageMenu()});
     document.getElementById('closeChat').addEventListener('click',closeChat); chatBackdrop.addEventListener('click',closeChat);
     document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.textContent; chatForm.requestSubmit()}));
@@ -2703,9 +2719,9 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     function normalizeSearch(value){return String(value||'').toLowerCase().replace(/\s+/g,'').trim()}
     function searchMatches(item,query){if(!query)return item.popular;const needle=normalizeSearch(query),hay=searchText(item),compact=normalizeSearch(hay);return hay.includes(String(query).toLowerCase().trim())||compact.includes(needle)}
     function searchScore(item,query){if(!query)return item.popular?10:0;const needle=normalizeSearch(query),title=normalizeSearch(searchCopy(item)[0]);if(title===needle)return 30;if(title.startsWith(needle))return 25;if(title.includes(needle))return 20;const keyHit=(item.keys||[]).some(k=>normalizeSearch(k).includes(needle)||needle.includes(normalizeSearch(k)));return keyHit?18:10}
-    function getSearchHits(query=''){return SEARCH_ITEMS.map((item,index)=>({item,index})).filter(({item})=>searchMatches(item,query)).sort((a,b)=>searchScore(b.item,query)-searchScore(a.item,query)).slice(0,9)}
+    function getSearchHits(query=''){return SEARCH_ITEMS.map((item,index)=>({item,index})).filter(({item})=>chatEnabled||item.icon!=='smart_toy').filter(({item})=>searchMatches(item,query)).sort((a,b)=>searchScore(b.item,query)-searchScore(a.item,query)).slice(0,9)}
     function goSearchResult(item){if(!item)return;show(item.screen||'home',item.open||'');if(item.anchor){setTimeout(()=>document.querySelector(item.anchor)?.scrollIntoView({behavior:'smooth',block:'start'}),140)}}
-    function renderChatAutocomplete(query=''){if(!chatAutocomplete)return;const hits=query.trim()?getSearchHits(query).slice(0,4):[];chatAutocomplete.innerHTML=hits.map(({item,index})=>{const copy=searchCopy(item);return `<button class="chat-result" type="button" data-chat-search-index="${index}"><span class="mi">${item.icon}</span><span><strong>${escapeHtml(copy[0])}</strong><small>${escapeHtml(copy[1])}</small></span></button>`}).join('');chatAutocomplete.style.display=hits.length?'flex':'none'}
+    function renderChatAutocomplete(query=''){if(!chatAutocomplete||!chatEnabled){if(chatAutocomplete){chatAutocomplete.innerHTML='';chatAutocomplete.style.display='none';}return;}const hits=query.trim()?getSearchHits(query).slice(0,4):[];chatAutocomplete.innerHTML=hits.map(({item,index})=>{const copy=searchCopy(item);return `<button class="chat-result" type="button" data-chat-search-index="${index}"><span class="mi">${item.icon}</span><span><strong>${escapeHtml(copy[0])}</strong><small>${escapeHtml(copy[1])}</small></span></button>`}).join('');chatAutocomplete.style.display=hits.length?'flex':'none'}
     chatAutocomplete?.addEventListener('click',e=>{const result=e.target.closest('[data-chat-search-index]');if(result)goSearchResult(SEARCH_ITEMS[Number(result.dataset.chatSearchIndex)])});
     function renderBotText(text){return escapeHtml(text).replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/\*\*([^*\n][^*]*?)\*\*/g,'<strong>$1</strong>')}
     function setMsgText(div,role,text){if(role==='user'){div.textContent=text;return}div.innerHTML=renderBotText(text)}
@@ -2718,6 +2734,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     chatInput?.addEventListener('input',e=>renderChatAutocomplete(e.target.value));
     chatInput?.addEventListener('focus',e=>renderChatAutocomplete(e.target.value));
     async function submitChatQuestion(question){
+      if(!chatEnabled)return;
       const q=String(question||'').trim();
       if(!q)return;
       chatInput.value='';
@@ -2729,7 +2746,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
       chatLog.scrollTop=chatLog.scrollHeight;
       try{
         const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q,history:previousHistory,language:currentLang})});
-        if(!res.ok) throw new Error(`chat api ${res.status}`);
+        if(!res.ok){if(res.status===503){setChatAvailability(false);return;}throw new Error(`chat api ${res.status}`)}
         const data=await res.json();
         const answer=data.answer||getLocalAnswer(q);
         setMsgText(botDiv,'bot',answer);

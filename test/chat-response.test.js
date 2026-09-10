@@ -3,6 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
+process.env.CHAT_CONTROL_INITIAL_ENABLED = 'true';
+const chatControl = require('../lib/chat-control');
+chatControl._test.setBlobClientForTests({ get: async () => null, put: async () => ({}) });
+
 const handler = require('../api/chat');
 const {
   CHAT_SYSTEM_PROMPT,

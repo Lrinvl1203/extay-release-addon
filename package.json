@@ -1,10 +1,12 @@
 {
-  "name": "extay-guide",
+  "name": "extay-release-addon",
   "version": "1.0.0",
   "scripts": {
     "start": "npx serve .",
     "test": "node scripts/build-chat-fallback.js --check && node --test test/*.test.js",
     "build:chat": "node scripts/build-chat-fallback.js"
   },
-  "devDependencies": {}
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  }
 }

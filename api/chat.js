@@ -4,6 +4,7 @@ const path = require('path');
 const { createHash } = require('node:crypto');
 const GUIDE_KNOWLEDGE = require('../data/guide-knowledge.json');
 const createGuestFallback = require('../lib/guest-fallback');
+const { getChatControl } = require('../lib/chat-control');
 const guestFallback = createGuestFallback(GUIDE_KNOWLEDGE);
 
 function readChatSystemPrompt() {
@@ -256,6 +257,10 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  if (!(await getChatControl()).enabled) {
+    return res.status(503).json({ error: 'Chat is currently unavailable', code: 'CHAT_DISABLED' });
+  }
 
   const body = parseBody(req);
   const apiKey = process.env.OPENAI_API_KEY;

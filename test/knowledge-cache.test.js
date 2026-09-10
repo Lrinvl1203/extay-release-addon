@@ -3,6 +3,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const test = require('node:test');
+
+process.env.CHAT_CONTROL_INITIAL_ENABLED = 'true';
+const chatControl = require('../lib/chat-control');
+chatControl._test.setBlobClientForTests({ get: async () => null, put: async () => ({}) });
 const handler = require('../api/chat');
 const { GUIDE_KNOWLEDGE: guide, buildRequestBody, localAnswer } = handler._test;
 const html = fs.readFileSync(path.join(__dirname, '..', 'guide-extay.html'), 'utf8');
