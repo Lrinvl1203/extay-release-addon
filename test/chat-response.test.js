@@ -6,6 +6,8 @@ const test = require('node:test');
 process.env.CHAT_CONTROL_INITIAL_ENABLED = 'true';
 const chatControl = require('../lib/chat-control');
 chatControl._test.setBlobClientForTests({ get: async () => null, put: async () => ({}) });
+const privateBlob = require('../lib/private-blob');
+privateBlob._test.setBlobClientForTests({ get: async () => null, put: async () => ({}) });
 
 const handler = require('../api/chat');
 const {
@@ -18,7 +20,8 @@ const {
   formatGuestAnswer,
   localAnswer,
   normalizeAnswer,
-  normalizeKoreanSpacing
+  normalizeKoreanSpacing,
+  publishedLocalAnswer
 } = handler._test;
 
 test('Traditional Chinese (Taiwan) is preserved through prompt and fallback paths', () => {
@@ -203,7 +206,7 @@ test('Korean spacing guard corrects common guest-facing forms', () => {
   );
 });
 
-test('API-key fallback returns a concise guest answer', async () => {
+test('API-key fallback returns the currently published accommodation answer', async () => {
   const previousKey = process.env.OPENAI_API_KEY;
   delete process.env.OPENAI_API_KEY;
 
@@ -231,7 +234,18 @@ test('API-key fallback returns a concise guest answer', async () => {
   assert.equal(statusCode, 200);
   assert.equal(payload.fallback, true);
   assert.ok(payload.answer.length <= 180);
-  assert.match(payload.answer, /^체크인은 오후 4시부터/);
+  assert.match(payload.answer, /^🕓 체크인 16:00/);
+});
+
+test('published local answers use edited Wi-Fi, parking and FAQ values', () => {
+  const settings = {
+    guides: { wifiSsid: 'NEW_WIFI', wifiPassword: 'NEW_PASS', parking: '새 주차 안내' },
+    stay: { parking: '건물 옆 주차' },
+    faq: [{ question: '수건은 어디에 있나요?', answer: '현관 수납장에 있습니다.' }]
+  };
+  assert.match(publishedLocalAnswer('와이파이 비밀번호?', 'ko', settings), /NEW_WIFI[\s\S]*NEW_PASS/);
+  assert.match(publishedLocalAnswer('주차는?', 'ko', settings), /건물 옆 주차/);
+  assert.equal(publishedLocalAnswer('수건은 어디에 있나요?', 'ko', settings), '현관 수납장에 있습니다.');
 });
 
 test('browser fallback uses the same concise Korean copy', () => {

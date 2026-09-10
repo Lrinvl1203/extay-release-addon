@@ -1516,6 +1516,10 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
               <div class="home-support-details"><div class="home-help-copy"><span class="airbnb-brand" aria-label="Airbnb"><img src="assets/extay/airbnb-logo.svg" alt=""><span>airbnb</span></span><p id="homeContact">예약하신 에어비앤비 메시지를 통해 호스트에게 연락해 주세요.</p></div></div>
             </article>
           </div>
+          <section id="managedFaqSection" class="faq-card" aria-labelledby="managedFaqTitle" hidden>
+            <div class="faq-section-title"><h3 id="managedFaqTitle">자주 묻는 질문</h3><span>FAQ</span></div>
+            <div class="faq-list" id="managedFaqList"></div>
+          </section>
           <footer class="hotel-footer"><strong>EXTAY Mansion</strong><span class="hotel-footer-tagline">SEOUL PRIVATE STAY</span></footer>
         </section>
       </section>
@@ -2380,6 +2384,48 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     function text(el,value){if(el&&value!==undefined)el.textContent=value}
     function html(el,value){if(el&&value!==undefined)el.innerHTML=value}
     function eachText(nodes,values){nodes.forEach((el,i)=>text(el,values[i]))}
+    let publishedSiteContent=null;
+    function managedValue(value){return typeof value==='string'&&value.trim()?value.trim():''}
+    function safeManagedUrl(value){try{const parsed=new URL(String(value||''));return parsed.protocol==='https:'?parsed.toString():''}catch(_){return ''}}
+    function safeManagedImage(value){const source=String(value||'').trim();if(/^assets\/(?!.*\.\.)[^\s"'<>]+$/i.test(source))return source;return safeManagedUrl(source)}
+    function setManagedHref(anchor,value){const url=safeManagedUrl(value);if(!anchor||!url)return;anchor.href=url;anchor.target='_blank';anchor.rel='noopener noreferrer'}
+    function upsertManagedNote(screenSelector,key,value){const screen=q(screenSelector),copy=managedValue(value);let note=screen?.querySelector(`[data-managed-note="${key}"]`);if(!screen)return;if(!copy){note?.remove();return}if(!note){note=document.createElement('p');note.className='page-sub';note.dataset.managedNote=key;screen.querySelector(':scope > article, :scope > .guide-detail-hero')?.after(note)}note.textContent=copy}
+    function renderManagedFaq(items){const section=q('#managedFaqSection'),list=q('#managedFaqList');if(!section||!list)return;const rows=(Array.isArray(items)?items:[]).filter(item=>managedValue(item?.question)&&managedValue(item?.answer)).slice(0,10);list.replaceChildren(...rows.map(item=>{const details=document.createElement('details'),summary=document.createElement('summary'),answer=document.createElement('div'),copy=document.createElement('p');details.className='faq-item';summary.textContent=managedValue(item.question);answer.className='faq-answer';copy.textContent=managedValue(item.answer);answer.appendChild(copy);details.append(summary,answer);return details}));section.hidden=!rows.length}
+    function applyPublishedSiteContent(content){
+      if(!content||typeof content!=='object')return;
+      publishedSiteContent=content;
+      const property=content.property||{},stay=content.stay||{},guides=content.guides||{},images=content.images||{};
+      const name=managedValue(property.name),address=managedValue(property.address),transit=managedValue(property.transit),description=managedValue(property.description);
+      if(name){text(q('#heroTitle'),name);text(q('#gettingName'),name);text(q('.transport-destination-card .destination-pin b'),name);text(q('.hotel-footer strong'),name)}
+      if(address){text(q('#gettingAddress'),address);text(q('.checkin-overview .checkin-info-row:nth-child(2) strong'),address);text(q('.transport-destination-card .destination-chip:nth-child(1) b'),address)}
+      if(transit){text(q('#gettingTransit'),transit);text(q('#stayEssentials .essential-item:nth-child(4) strong'),transit);text(q('.transport-destination-card .destination-chip:nth-child(4) b'),transit)}
+      if(description)text(q('#editorialWelcomeBody'),description);
+      const checkIn=managedValue(stay.checkIn),checkOut=managedValue(stay.checkOut),entry=managedValue(stay.entry),parking=managedValue(stay.parking),luggage=managedValue(stay.luggage);
+      if(checkIn)text(q('#stayEssentials .essential-item:nth-child(1) strong'),checkIn);
+      if(checkOut)text(q('#stayEssentials .essential-item:nth-child(2) strong'),checkOut);
+      if(entry){text(q('#stayEssentials .essential-item:nth-child(3) strong'),entry);text(q('.checkin-overview .checkin-info-row:nth-child(3) strong'),entry)}
+      if(checkIn||checkOut)text(q('.checkin-overview .checkin-info-row:nth-child(1) strong'),`체크인 ${checkIn||'—'} · 체크아웃 ${checkOut||'—'}`);
+      if(parking)text(q('.checkin-overview .checkin-info-row:nth-child(4) strong'),parking);
+      if(luggage)text(q('.checkin-overview .checkin-info-row:nth-child(5) strong'),luggage);
+      const wifiSsid=managedValue(guides.wifiSsid),wifiPassword=managedValue(guides.wifiPassword),wifiCards=qa('.wifi-network-card');
+      if(wifiSsid&&wifiCards[0]){text(wifiCards[0].querySelector('strong'),wifiSsid);wifiCards[0].querySelector('[data-copy]')?.setAttribute('data-copy',wifiSsid)}
+      if(wifiPassword&&wifiCards[1]){text(wifiCards[1].querySelector('strong'),wifiPassword);wifiCards[1].querySelector('[data-copy]')?.setAttribute('data-copy',wifiPassword)}
+      const wifiNotes=managedValue(guides.wifiNotes);if(wifiNotes)text(q('.wifi-help-grid .wifi-visual-card:last-child div>span'),wifiNotes);
+      upsertManagedNote('[data-screen="checkin"]','parking',guides.parking);
+      upsertManagedNote('[data-screen="laundry"]','laundry',guides.laundry);
+      upsertManagedNote('[data-screen="trash"]','trash',guides.trash);
+      upsertManagedNote('[data-screen="appliances"]','facilities',guides.facilities);
+      qa('.getting-actions a:first-child,.checkin-map-actions a:first-child,.transport-actions a:first-child').forEach(anchor=>setManagedHref(anchor,property.naverMapUrl));
+      qa('.getting-actions a:nth-child(2),.checkin-map-actions a:nth-child(2),.transport-actions a:nth-child(2)').forEach(anchor=>setManagedHref(anchor,property.googleMapUrl));
+      const phone=managedValue(property.phone),kakao=safeManagedUrl(property.kakaoUrl);
+      if(phone||kakao){Object.values(CONTACT_DETAILS).forEach(group=>{if(phone)group.phone.value=phone;if(kakao)group.kakao.value=kakao})}
+      const hero=(Array.isArray(images.hero)?images.hero:[]).map(safeManagedImage).filter(Boolean).slice(0,heroSlides.length);
+      hero.forEach((source,index)=>{heroSources[index]=source;heroSlides[index].style.backgroundImage=`url(${JSON.stringify(source)})`});
+      const gallery=(Array.isArray(images.gallery)?images.gallery:[]).map(safeManagedImage).filter(Boolean).slice(0,12),galleryButtons=qa('.gallery-spread [data-fullscreen-image]');
+      gallery.forEach((source,index)=>{const button=galleryButtons[index],img=button?.querySelector('img');if(button)button.dataset.fullscreenImage=source;if(img)img.src=source});
+      renderManagedFaq(content.faq);
+    }
+    async function loadPublishedSiteContent(){try{if(new URLSearchParams(location.search).get('draft-preview')==='1'){const preview=JSON.parse(localStorage.getItem('extay-admin-preview')||'null');if(preview?.content&&Date.now()-Number(preview.createdAt||0)<600000){applyPublishedSiteContent(preview.content);return}}const response=await fetch('/api/site-content',{headers:{Accept:'application/json'},cache:'no-store'});if(!response.ok)return;const data=await response.json();applyPublishedSiteContent(data?.published||data)}catch(_){}}
     function applySpecialTypography(root=document.body){
       if(!root)return;
       const scope=root.nodeType===1?root:root.parentElement;
@@ -2417,7 +2463,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     function iconLabel(icon,label){return `<span class="mi">${icon}</span><br>${label}`}
     function closeLanguageMenu(){q('#homeLanguage')?.classList.remove('open');q('#homeLangToggle')?.setAttribute('aria-expanded','false')}
     function toggleLanguageMenu(){const control=q('#homeLanguage'),button=q('#homeLangToggle');if(!control||!button)return;const willOpen=!control.classList.contains('open');control.classList.toggle('open',willOpen);button.setAttribute('aria-expanded',String(willOpen));if(willOpen)setTimeout(()=>q(`.home-language-option[data-language="${currentLang}"]`)?.focus(),0)}
-    function setLanguage(nextLang){const next=LANG_ORDER.includes(nextLang)?nextLang:'ko';currentLang=next;saveStoredLanguage(next);closeLanguageMenu();applyStaticLanguage();renderSmartGuide();if(chatAutocomplete)renderChatAutocomplete(chatInput?.value||'');if(document.body.classList.contains('is-restaurants'))renderRestaurants();if(document.body.classList.contains('is-guidebook'))loadGuidebook(next==='ko'?'ko':'en',true)}
+    function setLanguage(nextLang){const next=LANG_ORDER.includes(nextLang)?nextLang:'ko';currentLang=next;saveStoredLanguage(next);closeLanguageMenu();applyStaticLanguage();applyPublishedSiteContent(publishedSiteContent);renderSmartGuide();if(chatAutocomplete)renderChatAutocomplete(chatInput?.value||'');if(document.body.classList.contains('is-restaurants'))renderRestaurants();if(document.body.classList.contains('is-guidebook'))loadGuidebook(next==='ko'?'ko':'en',true)}
     function cycleLanguage(){const index=LANG_ORDER.indexOf(currentLang);setLanguage(LANG_ORDER[(index+1)%LANG_ORDER.length])}
     const CHAT_LAUNCHER_COPY={
       ko:{label:'AI 컨시어지',message:'무엇을 도와드릴까요?',compact:'AI 상담',dismiss:'말풍선 닫기'},
@@ -2692,6 +2738,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenuPanel();closeContactModal();closeLanguageMenu()}});
     initChatGreeting();
     loadChatAvailability();
+    loadPublishedSiteContent();
     document.addEventListener('click',e=>{if(e.target.closest('.menu-link'))closeMenuPanel();if(!e.target.closest('#homeLanguage'))closeLanguageMenu()});
     document.getElementById('closeChat').addEventListener('click',closeChat); chatBackdrop.addEventListener('click',closeChat);
     document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.textContent; chatForm.requestSubmit()}));
@@ -2746,7 +2793,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
       chatLog.scrollTop=chatLog.scrollHeight;
       try{
         const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q,history:previousHistory,language:currentLang})});
-        if(!res.ok){if(res.status===503){setChatAvailability(false);return;}throw new Error(`chat api ${res.status}`)}
+        if(!res.ok){if(res.status===503){setChatAvailability(false);return}if(res.status===429){const limitCopy={ko:'현재 AI 상담 사용 한도에 도달했습니다. 숙소 가이드를 확인하거나 Airbnb 메시지로 호스트에게 문의해 주세요.',en:'The AI concierge usage limit has been reached. Please use the guest guide or contact the host through Airbnb messages.',ja:'AIコンシェルジュの利用上限に達しました。宿泊ガイドをご確認いただくか、Airbnbメッセージでホストへお問い合わせください。',zh:'AI礼宾使用次数已达上限。请查看住宿指南或通过Airbnb消息联系房东。','zh-TW':'AI禮賓使用次數已達上限。請查看住宿指南或透過Airbnb訊息聯絡房東。'};const answer=limitCopy[currentLang]||limitCopy.ko;setMsgText(botDiv,'bot',answer);botDiv.classList.remove('typing');chatHistory.push({role:'assistant',content:answer});return}throw new Error(`chat api ${res.status}`)}
         const data=await res.json();
         const answer=data.answer||getLocalAnswer(q);
         setMsgText(botDiv,'bot',answer);

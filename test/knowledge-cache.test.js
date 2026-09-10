@@ -7,6 +7,8 @@ const test = require('node:test');
 process.env.CHAT_CONTROL_INITIAL_ENABLED = 'true';
 const chatControl = require('../lib/chat-control');
 chatControl._test.setBlobClientForTests({ get: async () => null, put: async () => ({}) });
+const privateBlob = require('../lib/private-blob');
+privateBlob._test.setBlobClientForTests({ get: async () => null, put: async () => ({}) });
 const handler = require('../api/chat');
 const { GUIDE_KNOWLEDGE: guide, buildRequestBody, localAnswer } = handler._test;
 const html = fs.readFileSync(path.join(__dirname, '..', 'guide-extay.html'), 'utf8');

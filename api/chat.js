@@ -5,6 +5,8 @@ const { createHash } = require('node:crypto');
 const GUIDE_KNOWLEDGE = require('../data/guide-knowledge.json');
 const createGuestFallback = require('../lib/guest-fallback');
 const { getChatControl } = require('../lib/chat-control');
+const { getPublishedSettings } = require('../lib/accommodation-settings');
+const { reserveChatUsage } = require('../lib/chat-usage');
 const guestFallback = createGuestFallback(GUIDE_KNOWLEDGE);
 
 function readChatSystemPrompt() {
@@ -106,7 +108,7 @@ const GUIDE_CONTEXT = `GUIDE_KNOWLEDGE:\n${JSON.stringify(GUIDE_KNOWLEDGE)}`;
 const PROMPT_CACHE_KEY = 'extay-guide:' + createHash('sha256')
   .update(CHAT_SYSTEM_PROMPT + '\n' + GUIDE_CONTEXT).digest('hex').slice(0, 24);
 
-function buildRequestBody(question, history = [], model = 'gpt-5.4-mini', preferredLanguage = '') {
+function buildRequestBody(question, history = [], model = 'gpt-5.4-mini', preferredLanguage = '', publishedSettings = null) {
   const messages = (Array.isArray(history) ? history : [])
     .filter(m => m && typeof m.content === 'string')
     .map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content.slice(0, 1200) }));
@@ -116,7 +118,12 @@ function buildRequestBody(question, history = [], model = 'gpt-5.4-mini', prefer
     model,
     input: [
       { role: 'system', content: CHAT_SYSTEM_PROMPT },
-      { role: 'developer', content: GUIDE_CONTEXT },
+      {
+        role: 'developer',
+        content: publishedSettings && typeof publishedSettings === 'object'
+          ? `${GUIDE_CONTEXT}\n\nCURRENT_PUBLISHED_SITE_CONTENT:\n${JSON.stringify(publishedSettings)}\nThis is the current accommodation operating information. When it conflicts with GUIDE_KNOWLEDGE, follow CURRENT_PUBLISHED_SITE_CONTENT.`
+          : GUIDE_CONTEXT
+      },
       ...messages.slice(-6),
       { role: 'user', content: `TARGET_LANGUAGE: ${languageName(detectQuestionLanguage(question, preferredLanguage))}\nLATEST_GUEST_QUESTION:\n${question}` }
     ],
@@ -240,6 +247,30 @@ function localAnswer(question, preferredLanguage = '') {
   return guestFallback.answer(question, preferredLanguage);
 }
 
+function publishedLocalAnswer(question, preferredLanguage = '', settings = null) {
+  if (!settings || typeof settings !== 'object') return localAnswer(question, preferredLanguage);
+  const q = String(question || '').toLowerCase().replace(/\s+/g, '');
+  const property = settings.property || {};
+  const stay = settings.stay || {};
+  const guides = settings.guides || {};
+  const faq = Array.isArray(settings.faq) ? settings.faq : [];
+  const exactFaq = faq.find(item => {
+    const candidate = String(item?.question || '').toLowerCase().replace(/\s+/g, '');
+    return candidate && (q.includes(candidate) || candidate.includes(q));
+  });
+  if (exactFaq?.answer) return String(exactFaq.answer);
+  if (/(?:와이파이|wifi|wi-fi|网络|網路|ワイファイ|パスワード)/i.test(question)) return `📶 Wi-Fi\nID: ${guides.wifiSsid || '호스트에게 확인해 주세요.'}\n비밀번호: ${guides.wifiPassword || '호스트에게 확인해 주세요.'}\n${guides.wifiNotes || ''}`.trim();
+  if (/(?:체크인|체크아웃|입실|퇴실|check.?in|check.?out|入住|退房|チェックイン|チェックアウト)/i.test(question)) return `🕓 체크인 ${stay.checkIn || '—'} · 체크아웃 ${stay.checkOut || '—'}\n${stay.entry || ''}`.trim();
+  if (/(?:주소|위치|오는길|찾아가|address|location|direction|地址|位置|住所|アクセス)/i.test(question)) return `📍 ${property.name || '숙소'}\n${property.address || ''}\n${property.transit || ''}`.trim();
+  if (/(?:주차|parking|停车|停車|駐車)/i.test(question)) return `🚗 ${stay.parking || guides.parking || '주차 정보는 호스트에게 확인해 주세요.'}\n${guides.parking || ''}`.trim();
+  if (/(?:짐|수하물|보관|luggage|locker|行李|荷物)/i.test(question)) return `🧳 ${stay.luggage || '짐 보관 정보는 호스트에게 확인해 주세요.'}`;
+  if (/(?:세탁|건조|laundry|washer|dryer|洗衣|洗濯)/i.test(question)) return `🧺 ${guides.laundry || localAnswer(question, preferredLanguage)}`;
+  if (/(?:쓰레기|분리수거|trash|garbage|垃圾|ゴミ)/i.test(question)) return `🗑️ ${guides.trash || localAnswer(question, preferredLanguage)}`;
+  if (/(?:tv|ott|난방|온수|루프탑|시설|heating|rooftop|facility|供暖|屋顶|暖房|給湯)/i.test(question)) return `🏠 ${guides.facilities || localAnswer(question, preferredLanguage)}`;
+  if (/(?:연락|전화|카카오|contact|phone|联系|聯絡|電話)/i.test(question) && property.phone) return `☎️ 호스트 연락처: ${property.phone}`;
+  return localAnswer(question, preferredLanguage);
+}
+
 function parseBody(req) {
   if (typeof req.body === 'string') {
     try {
@@ -263,18 +294,25 @@ module.exports = async function handler(req, res) {
   }
 
   const body = parseBody(req);
+  const question = String(body.message || '').trim().slice(0, 1200);
+  if (!question) return res.status(400).json({ error: 'message is required' });
+  const published = await getPublishedSettings();
+  const publishedSettings = published?.settings || null;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     return res.status(200).json({
       fallback: true,
-      answer: localAnswer(body.message, body.language)
+      answer: publishedLocalAnswer(question, body.language, publishedSettings)
     });
   }
 
+  const usageReservation = await reserveChatUsage();
+  if (!usageReservation.allowed) {
+    return res.status(429).json({ error: 'Chat usage limit has been reached', code: usageReservation.code });
+  }
+
   try {
-    const question = String(body.message || '').trim().slice(0, 1200);
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
-    if (!question) return res.status(400).json({ error: 'message is required' });
     const targetLanguageCode = detectQuestionLanguage(question, body.language);
 
     const model = process.env.OPENAI_CONCIERGE_MODEL || 'gpt-5.4';
@@ -285,7 +323,7 @@ module.exports = async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(buildRequestBody(question, history, model, body.language))
+      body: JSON.stringify(buildRequestBody(question, history, model, body.language, publishedSettings))
     });
 
     let data = await response.json();
@@ -293,7 +331,7 @@ module.exports = async function handler(req, res) {
       console.warn('OpenAI API fallback:', response.status, data?.error?.code || data?.error?.message || 'unknown');
       return res.status(200).json({
         fallback: true,
-        answer: localAnswer(question, body.language)
+        answer: publishedLocalAnswer(question, body.language, publishedSettings)
       });
     }
 
@@ -315,7 +353,7 @@ module.exports = async function handler(req, res) {
     console.warn('Chat API fallback:', err.message || String(err));
     return res.status(200).json({
       fallback: true,
-      answer: localAnswer(body.message, body.language)
+      answer: publishedLocalAnswer(question, body.language, publishedSettings)
     });
   }
 };
@@ -332,5 +370,6 @@ module.exports._test = {
   localAnswer,
   normalizeAnswer,
   normalizeKoreanSpacing,
-  publicSearchDisclosure
+  publicSearchDisclosure,
+  publishedLocalAnswer
 };
