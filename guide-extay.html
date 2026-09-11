@@ -2699,6 +2699,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     }
     async function loadChatAvailability(){
       setChatAvailability(false);
+      if(window.parent!==window&&new URLSearchParams(location.search).get('admin-embed')==='1')return;
       try{const res=await fetch('/api/chat-status',{headers:{Accept:'application/json'},cache:'no-store'});if(!res.ok)throw new Error(`chat status ${res.status}`);const data=await res.json();setChatAvailability(data?.enabled===true)}catch{setChatAvailability(false)}
     }
     const menuPanel=document.getElementById('menuPanel'), menuBackdropEl=document.getElementById('menuBackdrop');
@@ -2738,7 +2739,7 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMenuPanel();closeContactModal();closeLanguageMenu()}});
     initChatGreeting();
     loadChatAvailability();
-    loadPublishedSiteContent();
+    if(!(window.parent!==window&&new URLSearchParams(location.search).get('admin-embed')==='1'))loadPublishedSiteContent();
     document.addEventListener('click',e=>{if(e.target.closest('.menu-link'))closeMenuPanel();if(!e.target.closest('#homeLanguage'))closeLanguageMenu()});
     document.getElementById('closeChat').addEventListener('click',closeChat); chatBackdrop.addEventListener('click',closeChat);
     document.querySelectorAll('.suggestion').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.textContent; chatForm.requestSubmit()}));
@@ -2812,6 +2813,9 @@ body .latin-font{font-family:'Oxanium','Arial Narrow',Arial,sans-serif!important
       e.preventDefault();
       submitChatQuestion(chatInput.value);
     });
+    if(window.parent!==window&&new URLSearchParams(location.search).get('admin-embed')==='1'){
+      window.ExtayPreviewGuide={apply:applyPublishedSiteContent,show:(screen)=>show(screen,'',{history:'replace'}),stop:()=>{heroAutoComplete=true;clearTimeout(heroAutoTimer);q('#brandIntro')?.remove();},closeContact:closeContactModal};
+    }
   </script>
 </body>
 </html>
