@@ -11,6 +11,8 @@
     button,.button-link{font:inherit;cursor:pointer;border:0;border-radius:11px;padding:11px 15px;background:#211a14;color:#fff;font-weight:650}.secondary{background:#eee7df;color:#211a14}.danger{background:#f8e8e5;color:#8c3229}.button-link{display:grid;place-items:center;text-decoration:none}.actions,.mini-actions{display:flex;gap:10px;margin-top:18px}.actions>*{flex:1}.feedback{min-height:22px;font-size:13px;color:#75695e;margin-top:12px}.status{padding:12px 14px;border-radius:12px;background:#f2eee9;margin:0 0 18px;font-size:14px}.status strong{display:block;margin-top:3px}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.toggle{position:relative;width:52px;height:30px;padding:0;border-radius:20px;background:#b9afa5;flex:0 0 auto}.toggle.on{background:#36734c}.toggle i{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s}.toggle.on i{left:26px}
     .control-card{margin-top:24px;padding:20px;border:1px solid #e5dcd1;border-radius:16px}.content-admin{margin-top:24px}.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:6px;margin-bottom:18px}.tab{white-space:nowrap;background:#eee7df;color:#211a14;padding:9px 12px;font-size:12px}.tab.active{background:#211a14;color:#fff}.tab-panel[hidden]{display:none}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field-grid .wide{grid-column:1/-1}.group{border:1px solid #e5dcd1;border-radius:14px;padding:16px;margin-bottom:14px}.group legend{font-weight:800;padding:0 6px}.helper{font-size:12px;color:#8a7d71;margin:7px 0 0}.usage-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}.usage-card{background:#f2eee9;border-radius:10px;padding:12px;font-size:11px}.usage-card strong{display:block;font-size:19px;margin-top:3px}.preview{border:1px dashed #cdbfaf;border-radius:10px;padding:12px;white-space:pre-wrap;font-size:12px;line-height:1.5;max-height:260px;overflow:auto;background:#fffaf5}.faq-editor{display:grid;gap:10px}.faq-row{border:1px solid #e5dcd1;border-radius:12px;padding:12px}.faq-row textarea{min-height:64px}.faq-row .remove-faq{margin-top:9px;padding:8px 10px;font-size:12px}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.section-heading h2{margin:0}
     @media(max-width:560px){body{padding:10px}main{margin:8px auto;padding:20px}.field-grid{grid-template-columns:1fr}.field-grid .wide{grid-column:auto}.usage-grid{grid-template-columns:1fr 1fr}.usage-card:last-child{grid-column:span 2}.mini-actions{display:grid;grid-template-columns:1fr 1fr}.mini-actions>*:last-child{grid-column:1/-1}}
+    .field-location{display:block;margin:9px 0 0;padding:10px 12px;background:#f7f2ec;border-left:3px solid #cdbfaf;border-radius:5px;color:#625346;font-size:12px;font-weight:400;line-height:1.65;overflow-wrap:anywhere}.field-location strong{display:block;color:#493b30;font-size:11px;margin-bottom:3px}.field-location a{display:inline-block;margin-top:6px;color:#62442e;text-underline-offset:3px;font-weight:650}.location-intro{margin:0 0 18px;font-size:13px;color:#625346;line-height:1.65}
+    .content-actions{position:sticky;bottom:8px;z-index:5;margin-top:20px;padding:14px;background:#fffaf5;border:1px solid #d9cec1;border-radius:14px;box-shadow:0 4px 20px #4b37251a}.content-actions p{margin:0;font-size:12px;color:#625346}.content-actions .mini-actions{margin-top:10px}.content-actions button{font-size:13px}.content-actions .feedback{margin-top:8px;min-height:0}button{touch-action:manipulation}
   </style>
 </head>
 <body>
@@ -26,9 +28,11 @@
       <h2>AI 컨시어지</h2><div class="status" id="status" role="status">현재 상태를 불러오는 중…</div>
       <div class="row"><span>게스트 화면과 API 사용</span><button id="toggle" class="toggle" type="button" aria-pressed="false" aria-label="챗봇 켜기/끄기"><i></i></button></div>
       <label for="reason" style="margin-top:16px">변경 사유 (선택)<textarea id="reason" maxlength="300" placeholder="예: API 점검 중"></textarea></label>
-      <div class="actions"><button id="save" type="button">상태 저장</button><a class="button-link secondary" href="guide-extay.html" target="_blank" rel="noopener">게스트 가이드</a></div>
+      <div class="actions"><button id="save" type="button">챗봇 상태 저장</button><a class="button-link secondary" href="guide-extay.html" target="_blank" rel="noopener">게스트 가이드</a></div>
+      <p class="field-location">이 버튼은 챗봇 ON/OFF와 변경 사유만 저장합니다. OFF 후 저장하면 고객 화면의 AI 입력창·챗봇 버튼·대화창이 숨겨지고 API 요청도 차단됩니다. 이미 열린 고객 화면은 새로고침해야 반영됩니다. 변경 사유는 관리자에게만 표시됩니다.</p>
     </section>
     <section class="content-admin" id="contentAdmin" hidden>
+      <p class="location-intro"><b>숙소 정보 수정 → 미리보기 → 게스트에게 게시</b><br>아래 입력란의 수정 내용과 호출 한도는 하단 ‘게스트에게 게시’를 눌러야 적용됩니다. ‘초안 저장’은 작업 보관용입니다. 각 입력란의 ‘현재 고객 페이지 열기’는 이미 게시된 화면을 엽니다.</p>
       <div class="tabs" role="tablist" aria-label="숙소 콘텐츠 관리">
         <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="basic">기본 정보</button><button class="tab" type="button" role="tab" aria-selected="false" data-tab="guide">이용 안내</button><button class="tab" type="button" role="tab" aria-selected="false" data-tab="contact">연락·사진</button><button class="tab" type="button" role="tab" aria-selected="false" data-tab="faq">FAQ</button><button class="tab" type="button" role="tab" aria-selected="false" data-tab="usage">사용량</button><button class="tab" type="button" role="tab" aria-selected="false" data-tab="review">검토·게시</button>
       </div>
@@ -46,7 +50,7 @@
         <fieldset class="group"><legend>사진</legend><div class="field-grid"><label class="wide">대표 사진 URL · 최대 3개<textarea data-field="images.hero" placeholder="한 줄에 하나"></textarea></label><label class="wide">갤러리 사진 URL · 최대 12개<textarea data-field="images.gallery" placeholder="한 줄에 하나"></textarea></label></div><p class="helper">HTTPS 주소 또는 이 사이트의 assets/ 경로를 입력하세요.</p></fieldset>
       </section>
       <section class="tab-panel" role="tabpanel" data-panel="faq" hidden>
-        <div class="section-heading"><h2>자주 묻는 질문</h2><button class="secondary" id="addFaq" type="button">질문 추가</button></div><div class="faq-editor" id="faqEditor"></div><p class="helper">최대 10개까지 등록할 수 있습니다.</p>
+        <div class="section-heading"><h2>자주 묻는 질문</h2><button class="secondary" id="addFaq" type="button">질문 추가</button></div><p class="field-location"><strong>반영 위치 · 홈 하단</strong>‘투숙 중 자주 찾는 정보’ 아래의 ‘자주 묻는 질문’에 표시됩니다. 질문은 접힌 항목 제목, 답변은 항목을 눌렀을 때 펼쳐지는 본문입니다. 게시된 FAQ는 챗봇 지식에도 반영됩니다. 등록된 항목이 없으면 이 영역은 숨겨집니다.<br><a href="guide-extay.html#home" target="_blank" rel="noopener">현재 고객 페이지 열기 ↗</a></p><div class="faq-editor" id="faqEditor"></div><p class="helper">최대 10개까지 등록할 수 있습니다.</p>
       </section>
       <section class="tab-panel" role="tabpanel" data-panel="usage" hidden>
         <div class="usage-grid"><div class="usage-card">오늘 호출<strong id="usageToday">0</strong></div><div class="usage-card">이번 달 호출<strong id="usageMonth">0</strong></div><div class="usage-card">전체 호출<strong id="usageTotal">0</strong></div></div>
@@ -54,9 +58,12 @@
       </section>
       <section class="tab-panel" role="tabpanel" data-panel="review" hidden>
         <h2>변경 내용 검토</h2><p>미리보기는 현재 브라우저에서만 초안을 적용합니다. 게시 버튼을 눌러야 모든 게스트에게 반영됩니다.</p><div class="preview" id="preview">입력 내용을 불러오는 중입니다.</div>
-        <div class="mini-actions"><button class="secondary" id="previewBtn" type="button">게스트 화면 미리보기</button><button class="secondary" id="draftBtn" type="button">초안 저장</button><button id="publishBtn" type="button">게스트에게 게시</button></div>
       </section>
-      <div class="feedback" id="contentFeedback" role="status" aria-live="polite"></div>
+      <div class="content-actions" aria-label="숙소 정보 저장과 게시">
+        <p><b>숙소 정보 반영</b> · 게시하면 모든 입력 탭의 내용이 고객 화면과 챗봇 지식에 함께 반영됩니다.</p>
+        <div class="mini-actions"><button class="secondary" id="previewBtn" type="button">게스트 화면 미리보기</button><button class="secondary" id="draftBtn" type="button">초안 저장</button><button id="publishBtn" type="button">게스트에게 게시</button></div>
+        <div class="feedback" id="contentFeedback" role="status" aria-live="polite"></div>
+      </div>
     </section>
   </main>
   <script>
@@ -64,6 +71,34 @@
       let password='',enabled=false,savedEnabled=false,draft={},published={},usage={},draftRevision=null;
       const $=id=>document.getElementById(id),form=$('loginForm'),controls=$('controls'),contentAdmin=$('contentAdmin'),status=$('status'),toggle=$('toggle'),feedback=$('feedback'),contentFeedback=$('contentFeedback');
       const getPath=(object,path)=>path.split('.').reduce((value,key)=>value?.[key],object);
+      const fieldLocations={
+        'property.name':['홈 첫 화면의 숙소 이름, 홈 ‘오시는 길’ 카드·맨 아래 숙소 이름, ‘오는 길’ 페이지의 도착 숙소 이름입니다.','home'],
+        'property.address':['홈 ‘오시는 길’ 카드, ‘체크인’ 페이지의 ‘입퇴실 안내 → 주소’, ‘오는 길’ 페이지의 숙소 주소입니다. 지도 버튼의 목적지는 아래 지도 URL에서 별도로 수정하세요. 셀프 체크인 단계의 기존 주소 문구는 별도입니다.','checkin'],
+        'property.transit':['홈 ‘숙소 정보 한 눈에 보기 → LOCATION’과 ‘오시는 길’ 카드, ‘오는 길’ 페이지의 교통 요약입니다. 개별 교통수단의 상세 경로는 별도입니다.','transport'],
+        'property.description':['홈 ‘WELCOME TO EXTAY’ 소개 영역의 첫 번째 본문입니다. 소개 제목과 두 번째 본문은 별도입니다.','home'],
+        'stay.checkIn':['홈 ‘숙소 정보 한 눈에 보기 → CHECK-IN’과 ‘체크인’ 페이지의 ‘입퇴실 안내 → 이용 시간’입니다. 아래 셀프 체크인 단계에 적힌 시간 문구는 별도입니다.','checkin'],
+        'stay.checkOut':['홈 ‘숙소 정보 한 눈에 보기 → CHECK-OUT’과 ‘체크인’ 페이지의 ‘입퇴실 안내 → 이용 시간’입니다. 체크아웃 행동 목록은 별도입니다.','checkin'],
+        'stay.entry':['홈 ‘숙소 정보 한 눈에 보기 → ENTRY’와 ‘체크인’ 페이지의 ‘입퇴실 안내 → 입실 방식’입니다. 아래 셀프 체크인 단계 설명은 별도입니다.','checkin'],
+        'stay.luggage':['‘체크인’ 페이지의 ‘입퇴실 안내 → 짐 보관’ 요약입니다. 보관함 위치·요금 등 기존 상세 안내는 별도입니다.','checkin'],
+        'stay.parking':['‘체크인’ 페이지의 ‘입퇴실 안내 → 주차’ 굵은 요약 문구입니다. 아래 보조 문구와 주차장별 상세 안내는 별도입니다.','checkin'],
+        'guides.wifiSsid':['‘Wi-Fi’ 페이지의 ‘네트워크 정보 → Network ID’와 해당 복사 버튼이 복사하는 값입니다.','wifi'],
+        'guides.wifiPassword':['‘Wi-Fi’ 페이지의 ‘네트워크 정보 → Password’와 해당 복사 버튼이 복사하는 값입니다.','wifi'],
+        'guides.wifiNotes':['‘Wi-Fi’ 페이지의 ‘연결이 불안정할 때 → 호스트 문의’ 카드 본문입니다. 나머지 연결 도움말 카드는 별도입니다.','wifi'],
+        'guides.parking':['‘체크인’ 페이지 제목 바로 아래의 추가 안내문입니다. 아래 ‘주차 안내’ 펼침 영역의 기존 주차장 정보는 별도입니다.','checkin'],
+        'guides.laundry':['‘세탁 안내’ 페이지 제목 바로 아래의 추가 안내문입니다. 세탁기·건조기 카드 안의 사용 단계와 사진은 별도입니다.','laundry'],
+        'guides.trash':['‘쓰레기 배출’ 페이지 제목 바로 아래의 추가 안내문입니다. 아래 분리수거 단계와 쓰레기통 사진은 별도입니다.','trash'],
+        'guides.facilities':['‘TV · 난방 · 루프탑 안내’ 페이지 제목 바로 아래의 추가 안내문입니다. 각 기기 카드 안의 상세 사용법과 사진은 별도입니다.','appliances'],
+        'property.phone':['호스트 연락처 데이터와 연락처 팝업에 사용하는 번호입니다. 현재 고객 화면에는 이 팝업을 여는 전화 버튼이 없어 번호가 직접 표시되지는 않습니다. 홈의 에어비앤비 연락 안내 문구는 그대로입니다.'],
+        'property.kakaoUrl':['연락처 팝업에 사용하는 카카오톡 주소입니다. 현재 고객 화면에는 이 팝업을 여는 카카오톡 버튼이 없어 링크가 직접 표시되지는 않습니다. 홈의 에어비앤비 연락 안내 문구는 그대로입니다.'],
+        'property.naverMapUrl':['홈 ‘오시는 길’, ‘체크인’ 페이지, ‘오는 길’ 페이지의 네이버 지도 버튼이 여는 주소입니다. 화면에 적힌 숙소 주소 문구는 위 주소 입력란에서 별도로 수정하세요.','transport'],
+        'property.googleMapUrl':['홈 ‘오시는 길’, ‘체크인’ 페이지, ‘오는 길’ 페이지의 Google Maps 버튼이 여는 주소입니다. 화면의 숙소 주소 문구와 별도로 저장됩니다.','transport'],
+        'images.hero':['홈 맨 위 큰 배경 사진 슬라이드입니다. 입력한 줄 순서대로 기존 사진을 교체합니다. 홈 중간 ‘객실 둘러보기’의 작은 사진들은 별도입니다.','home'],
+        'images.gallery':['‘갤러리’ 페이지 본문 사진과 해당 사진을 눌렀을 때의 확대 이미지입니다. 입력한 줄 순서대로 기존 사진을 교체합니다. 사진 설명과 홈의 작은 사진들은 별도입니다.','gallery'],
+        'limits.daily':['고객 화면의 문구를 바꾸는 항목은 아닙니다. 한국 시간 기준 하루 AI 호출 한도에 도달하면 추가 AI 요청을 차단하고 고객에게 한도 안내를 표시합니다. 0은 제한 없음입니다.'],
+        'limits.monthly':['고객 화면의 문구를 바꾸는 항목은 아닙니다. 한국 시간 기준 한 달 AI 호출 한도에 도달하면 추가 AI 요청을 차단하고 고객에게 한도 안내를 표시합니다. 0은 제한 없음입니다.']
+      };
+      function showFieldLocations(){document.querySelectorAll('[data-field]').forEach(input=>{const info=fieldLocations[input.dataset.field];if(!info)return;const label=input.closest('label'),wrapper=document.createElement('div'),note=document.createElement('div'),title=document.createElement('strong');wrapper.className=label.className;label.className='';label.before(wrapper);wrapper.appendChild(label);note.className='field-location';note.id='location-'+input.dataset.field.replaceAll('.','-');input.setAttribute('aria-describedby',note.id);title.textContent='반영 위치';note.append(title,document.createTextNode(info[0]));if(info[1]){const link=document.createElement('a');link.href='guide-extay.html#'+info[1];link.target='_blank';link.rel='noopener';link.textContent='현재 고객 페이지 열기 ↗';note.append(document.createElement('br'),link)}wrapper.appendChild(note)})}
+      showFieldLocations();
       const setPath=(object,path,value)=>{const keys=path.split('.');let target=object;keys.slice(0,-1).forEach(key=>{if(!target[key]||typeof target[key]!=='object')target[key]={};target=target[key]});target[keys.at(-1)]=value};
       async function request(path,options={}){const headers={Accept:'application/json','X-Admin-Password':password,...(options.body?{'Content-Type':'application/json'}:{})};const response=await fetch(path,{...options,headers,cache:'no-store'});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.error||`요청 실패 (${response.status})`);return data}
       function renderControl(){toggle.classList.toggle('on',enabled);toggle.setAttribute('aria-pressed',String(enabled));toggle.setAttribute('aria-label',enabled?'챗봇 끄기':'챗봇 켜기');status.replaceChildren(document.createTextNode('현재 상태'));const strong=document.createElement('strong');strong.textContent=enabled?'켜짐':'꺼짐';status.appendChild(strong)}
